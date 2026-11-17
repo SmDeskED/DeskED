@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Smart Desk: управление классом</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;600&family=Unbounded:wght@600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#E9EEF0;--panel:#F8FAFB;--ink:#14213D;--mut:#5B6B7A;--line:#CBD5DB;--floor:#DCE6E9;--tile:#B9C8CE;--teal:#0F7B6C;--amber:#C27F00;--bad:#C23B3B;--wood:#D2AE78;--woodd:#9C7A45;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0E1821;--panel:#16232E;--ink:#E7EEF3;--mut:#93A4B3;--line:#2A3B49;--floor:#1B2B37;--tile:#2C4150;--teal:#3DC2AC;--amber:#F2B233;--bad:#EF7B7B;color-scheme:dark}}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.4 Onest,system-ui,sans-serif;display:grid;grid-template-rows:auto 1fr}
+header{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line)}
+h1{font:600 17px Unbounded,system-ui,sans-serif;margin:0}
+h2{font-size:13px;font-weight:600;color:var(--mut);margin:0 0 8px}
+.st{margin-left:auto;font-weight:600}.st.bad{color:var(--bad)}.st.ok{color:var(--teal)}
+main{display:grid;grid-template-columns:210px 1fr 240px;gap:12px;padding:12px;min-height:0}
+@media(max-width:900px){main{grid-template-columns:1fr;overflow:auto}}
+.pn{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;overflow:auto;display:flex;flex-direction:column;gap:8px}
+.b{min-height:44px;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;font:inherit;padding:0 12px;cursor:pointer;text-align:left}
+.b:disabled{opacity:.45;cursor:default}
+.b.p{background:var(--teal);color:var(--bg);border-color:var(--teal);font-weight:600;text-align:center}
+.b:focus-visible,input:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+.row{display:flex;gap:6px}.row .b{flex:1;padding:0;text-align:center}
+.sv{display:flex;gap:6px}.sv .b:first-child{flex:1}.sv .b:last-child{width:44px;padding:0;text-align:center}
+input[type=text]{min-height:44px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);padding:0 10px;font:inherit}
+input[type=range]{width:100%;height:32px;accent-color:var(--teal)}
+.stage{padding:8px;gap:6px}
+svg{width:100%;flex:1;min-height:0;touch-action:none;border-radius:6px;display:block}
+.fl{fill:var(--floor)}.bd{fill:var(--ink);opacity:.8}
+.ac{fill:var(--wood);stroke:var(--woodd);stroke-width:2}
+.dk{fill:var(--ink);fill-opacity:.07;stroke:var(--amber);stroke-width:3;stroke-dasharray:8 6;cursor:grab}
+.dk.sel{stroke:var(--teal);stroke-width:5}.dk.bad{stroke:var(--bad);stroke-width:5}
+.fr{fill:var(--ink);opacity:.7;pointer-events:none}
+.tx{font:600 22px Onest,sans-serif;fill:var(--ink);text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.hd{fill:var(--teal);cursor:grab}.ln{stroke:var(--amber);stroke-width:3;stroke-dasharray:2 7;stroke-linecap:round}
+.lg{font-size:13px;color:var(--mut);margin:0}
+.off{opacity:.45;pointer-events:none}
+.big{font:600 34px Unbounded,system-ui,sans-serif}
+</style>
+</head>
+<body>
+<header>
+  <h1>Smart Desk</h1>
+  <span id="sn">Пол видит 12 из 12 парт</span>
+  <span id="st" class="st"></span>
+  <button class="b p" id="go">Расставить парты</button>
+</header>
+<main>
+  <aside class="pn">
+    <h2>Готовые схемы</h2>
+    <div id="pr" style="display:flex;flex-direction:column;gap:6px"></div>
+    <h2 style="margin-top:8px">Мои схемы</h2>
+    <div id="my" style="display:flex;flex-direction:column;gap:6px"></div>
+    <input type="text" id="nm" placeholder="Название схемы" aria-label="Название схемы" maxlength="30">
+    <button class="b" id="sv">Сохранить схему</button>
+  </aside>
+  <section class="pn stage">
+    <svg id="svg" viewBox="0 0 1000 700" preserveAspectRatio="xMidYMid meet" aria-label="План класса">
+      <defs><pattern id="t" width="50" height="50" patternUnits="userSpaceOnUse"><path d="M50 0H0V50" fill="none" stroke="var(--tile)" stroke-width="1"/></pattern></defs>
+      <rect class="fl" width="1000" height="700"/><rect width="1000" height="700" fill="url(#t)"/>
+      <rect class="bd" x="300" y="0" width="400" height="14" rx="3"/>
+      <g id="L"></g>
+    </svg>
+    <p class="lg">Деревянная парта — где она стоит сейчас по данным пола. Пунктирный контур — куда она должна встать.</p>
+  </section>
+  <aside class="pn">
+    <h2>Выбранная парта</h2>
+    <div id="ins" class="off" style="display:flex;flex-direction:column;gap:8px">
+      <div class="big" id="num">–</div>
+      <label for="rg">Угол поворота: <b id="av">0°</b></label>
+      <input type="range" id="rg" min="0" max="359" value="0">
+      <div class="row"><button class="b" data-a="0">0°</button><button class="b" data-a="45">45°</button><button class="b" data-a="90">90°</button><button class="b" data-a="135">135°</button></div>
+      <div class="row"><button class="b" data-d="-15">−15°</button><button class="b" data-d="15">+15°</button><button class="b" data-d="90">+90°</button></div>
+      <label style="display:flex;gap:8px;align-items:center;min-height:44px"><input type="checkbox" id="sp" checked> Шаг 15° и сетка 10 см</label>
+    </div>
+    <p class="lg">Перетащите пунктирный контур парты пальцем. Зелёный маркер у задней кромки поворачивает её на любой угол.</p>
+    <p class="lg" id="rep" aria-live="polite"></p>
+  </aside>
+</main>
+<script>
+const $=s=>document.querySelector(s),R=Math.PI/180,W=1000,H=700,svg=$('#svg');
+const g=(n,f)=>Array.from({length:n},(_,i)=>{const[x,y,a]=f(i);return{x,y,a:((a%360)+360)%360}});
+const P={
+ 'Ряды':()=>g(12,i=>[175+(i%4)*217,220+((i/4)|0)*150,0]),
+ 'Группы':()=>{const c=[[230,260],[500,500],[770,260]];return g(12,i=>{const[cx,cy]=c[(i/4)|0],j=i%4;return[cx+(j%2?66:-66),cy+(j<2?-34:34),j<2?0:180]})},
+ 'Круг':()=>g(12,i=>{const t=i/12*2*Math.PI;return[500+290*Math.cos(t),370+290*Math.sin(t),t/R+90]}),
+ 'Подкова':()=>g(12,i=>i<4?[140,170+i*135,90]:i<8?[300+(i-4)*130,600,0]:[860,170+(i-8)*135,90]),
+ 'Диагональ':()=>g(12,i=>[190+(i%6)*100+((i/6)|0)*230,110+(i%6)*95,45])
+};
+let T=P['Ряды'](),A=T.map(d=>({...d})),sel=null,drag=null,busy=false,note=null,routes=null,stage='';
+const cl=(v,a,b)=>Math.min(b,Math.max(a,v)),nz=a=>((a%360)+360)%360;
+const diff=i=>Math.hypot(T[i].x-A[i].x,T[i].y-A[i].y)>1||Math.abs(((T[i].a-A[i].a+540)%360)-180)>1;
+/* Геометрия: парта 120x60 см, к каждой стороне добавлено по 4 см, значит зазор между партами и стеной не меньше 8 см */
+const HW=64,HH=34;
+const lp=(s,t,k)=>({x:s.x+(t.x-s.x)*k,y:s.y+(t.y-s.y)*k,a:s.a+(((t.a-s.a+540)%360)-180)*k});
+const ds=(p,q)=>Math.hypot(p.x-q.x,p.y-q.y);
+function hit(a,b){const dx=b.x-a.x,dy=b.y-a.y;if(dx*dx+dy*dy>21100)return false;
+  const ca=Math.cos(a.a*R),sa=Math.sin(a.a*R),cb=Math.cos(b.a*R),sb=Math.sin(b.a*R);
+  for(const[x,y]of[[ca,sa],[-sa,ca],[cb,sb],[-sb,cb]]){
+    const ra=HW*Math.abs(ca*x+sa*y)+HH*Math.abs(-sa*x+ca*y),rb=HW*Math.abs(cb*x+sb*y)+HH*Math.abs(-sb*x+cb*y);
+    if(Math.abs(dx*x+dy*y)>ra+rb-.5)return false}
+  return true}
+function out(d){const c=Math.abs(Math.cos(d.a*R)),s=Math.abs(Math.sin(d.a*R)),ex=HW*c+HH*s,ey=HW*s+HH*c;return d.x-ex<0||d.x+ex>W||d.y-ey<18||d.y+ey>H}
+function conf(P=T){const s=new Set;P.forEach((a,i)=>{if(out(a))s.add(i);P.forEach((b,j)=>{if(j>i&&hit(a,b)){s.add(i);s.add(j)}})});return s}
+/* Планировщик. Для каждой парты ищется путь A* в пространстве (x, y, угол) среди остальных парт, затем путь выпрямляется.
+   Парты едут одновременно, только если их маршруты не пересекаются по времени. Если все пути перекрыты, мешающая парта временно отъезжает на свободное место. */
+const ST=20,AS=15,NA=24,ad=(a,b)=>Math.abs(((a-b+540)%360)-180);
+const NB=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]].map(([x,y])=>[x,y,0,ST*Math.hypot(x,y)]).concat([[0,0,1,12],[0,0,-1,12]]);
+const free=(p,o)=>{if(out(p))return false;for(const q of o)if(hit(p,q))return false;return true};
+const segOk=(p,q,o)=>{const n=Math.max(1,Math.ceil(ds(p,q)/4),Math.ceil(ad(p.a,q.a)/3));for(let k=1;k<=n;k++)if(!free(lp(p,q,k/n),o))return false;return true};
+function route(s,goal,o,pred){
+  const key=(x,y,k)=>((x+80)*160+(y+80))*NA+k,seen=new Map,ok=new Map,hp=[];
+  const pose=(x,y,k)=>({x:s.x+x*ST,y:s.y+y*ST,a:((s.a+k*AS)%360+360)%360});
+  const valid=(x,y,k)=>{const id=key(x,y,k);let v=ok.get(id);if(v===undefined){const p=pose(x,y,k);v=-1;if(!out(p)){let d=1e9;for(const q of o){if(hit(p,q)){d=-1;break}const e=ds(p,q);if(e<d)d=e}v=d}ok.set(id,v)}return v};
+  const h=(x,y,k)=>{if(!goal)return 0;const p=pose(x,y,k);return 1.3*(ds(p,goal)+.8*ad(p.a,goal.a))};
+  const push=(f,n)=>{hp.push([f,n]);let i=hp.length-1;while(i>0){const j=(i-1)>>1;if(hp[j][0]<=hp[i][0])break;[hp[i],hp[j]]=[hp[j],hp[i]];i=j}};
+  const pop=()=>{const t=hp[0],l=hp.pop();if(hp.length){hp[0]=l;let i=0;for(;;){let c=2*i+1;if(c>=hp.length)break;if(c+1<hp.length&&hp[c+1][0]<hp[c][0])c++;if(hp[i][0]<=hp[c][0])break;[hp[i],hp[c]]=[hp[c],hp[i]];i=c}}return t};
+  const n0=[0,0,0];seen.set(key(0,0,0),{g:0,p:null,n:n0});push(h(0,0,0),n0);
+  for(let cnt=0;hp.length&&cnt<30000;cnt++){
+    const[,n]=pop(),[x,y,k]=n,r=seen.get(key(x,y,k));if(r.d)continue;r.d=1;
+    const p=pose(x,y,k);
+    if(goal?(ds(p,goal)<=30&&ad(p.a,goal.a)<=AS&&segOk(p,goal,o)):pred(p)){
+      const pts=[];if(goal)pts.push({...goal});for(let c=r;c;c=c.p)pts.push(pose(...c.n));
+      return pts.reverse()}
+    for(const[dx,dy,dk,c]of NB){const nx=x+dx,ny=y+dy,nk=(k+dk+NA)%NA;
+      if(Math.abs(nx)>78||Math.abs(ny)>78)continue;const v1=valid(nx,ny,nk);if(v1<0)continue;
+      const d0=ok.get(key(x,y,k));if(d0===undefined||Math.min(d0,v1)<175){const p1=pose(nx,ny,nk);if(!free(lp(p,p1,1/3),o)||!free(lp(p,p1,2/3),o))continue}
+      const g=r.g+c,id=key(nx,ny,nk),q=seen.get(id);if(q&&q.g<=g)continue;
+      const rec={g,p:r,n:[nx,ny,nk]};seen.set(id,rec);push(g+h(nx,ny,nk),rec.n)}}
+  return null}
+const smooth=(P,o)=>{const r=[P[0]];let i=0;while(i<P.length-1){let j=P.length-1;while(j>i+1&&!segOk(P[i],P[j],o))j--;r.push(P[j]);i=j}return r};
+function mk(pts){const cum=[0];for(let i=1;i<pts.length;i++)cum.push(cum[i-1]+Math.max(ds(pts[i-1],pts[i]),1.2*ad(pts[i-1].a,pts[i].a))+.001);return{pts,cum,tot:cum[cum.length-1]}}
+function at(r,k){const s=k*r.tot;let j=1;while(j<r.cum.length-1&&r.cum[j]<s)j++;const a=r.cum[j-1],b=r.cum[j];return lp(r.pts[j-1],r.pts[j],Math.min(1,Math.max(0,(s-a)/(b-a))))}
+function plan(){
+  const af={};
+  for(let t=0;t<14;t++){const r=once(af);if(r===null)return null;if(Array.isArray(r))return r;(af[r.j]=af[r.j]||new Set).add(r.i)}
+  return null}
+/* af[j] = парты, которые должны доехать раньше, чем тронется парта j (иначе j перекрывает им дорогу) */
+function once(af){
+  const cur=A.map(d=>({...d})),pend=new Set(T.map((_,i)=>i).filter(i=>diff(i))),steps=[],moved=new Set;
+  const ready=i=>![...(af[i]||[])].some(y=>pend.has(y));
+  const rt=(i,goal,pred)=>{const o=cur.filter((_,j)=>j!==i),r=route(cur[i],goal,o,pred);return r&&mk(smooth(r,o))};
+  const sync=b=>{const n=Math.min(400,Math.max(40,Math.ceil(Math.max(...b.map(m=>m.r.tot))/6)));
+    for(let q=0;q<=n;q++){const ps=b.map(m=>at(m.r,q/n));for(let x=0;x<ps.length;x++)for(let y=x+1;y<ps.length;y++)if(hit(ps[x],ps[y]))return false}return true};
+  const end=m=>{cur[m.i]={...m.r.pts[m.r.pts.length-1]}};
+  const pk=(j,extra)=>{const o=cur.filter((_,k)=>k!==j),r=route(cur[j],null,o,p=>T.every((d,k)=>k===j||!hit(p,d))&&!(extra||[]).some(q=>hit(p,q))&&(!extra||ds(p,cur[j])>100));
+    if(!r)return false;const m={i:j,r:mk(smooth(r,o)),park:1};steps.push([m]);end(m);pend.add(j);return true};
+  let park=0,first=-1;
+  while(pend.size){
+    const b=[];
+    [...pend].sort((x,y)=>(y===first)-(x===first)||ds(cur[y],T[y])-ds(cur[x],T[x])).forEach(i=>{
+      if(!ready(i)||cur.some((c,j)=>j!==i&&hit(T[i],c)))return;
+      const r=rt(i,T[i]);if(!r)return;const m={i,r};if(sync([...b,m]))b.push(m)});
+    if(b.length){steps.push(b);b.forEach(m=>{end(m);pend.delete(m.i);moved.add(m.i)});first=-1;continue}
+    if(++park>30)return null;
+    let ok=false;
+    /* 1) цель занята другой партой: отодвигаем её */
+    const bl=[...pend].map(j=>[j,[...pend].filter(i=>i!==j&&hit(cur[j],T[i])).length]).filter(x=>x[1]).sort((x,y)=>y[1]-x[1]);
+    for(const[j]of bl){const w=[...pend].find(i=>i!==j&&hit(cur[j],T[i]));if(pk(j)){first=w;ok=true;break}}
+    /* 2) цель свободна, но путь перекрыт: ищем парту, без которой путь есть */
+    for(const i of [...pend].filter(ready).slice(0,3)){if(ok)break;
+      const near=cur.map((_,j)=>j).filter(j=>j!==i).sort((x,y)=>ds(cur[x],cur[i])-ds(cur[y],cur[i])).slice(0,8);
+      for(const j of near){const o=cur.filter((_,k)=>k!==i&&k!==j),r0=route(cur[i],T[i],o);if(!r0)continue;
+        const sp=[...r0];const rr=mk(smooth(r0,o));for(let q=0;q<=40;q++)sp.push(at(rr,q/40));
+        if(pk(j,sp)){first=i;ok=true;break}
+        /* парта j уже стоит на месте и не отъезжает: пусть i поедет раньше неё (перепланируем) */
+        if(moved.has(j))return{i,j}}}
+    if(!ok)return null}
+  return steps}
+function desk(d,i,cls,top){return `<g data-i="${i}" transform="translate(${d.x} ${d.y}) rotate(${d.a})"><rect class="${cls}" x="-60" y="-30" width="120" height="60" rx="7"/>${top?`<rect class="fr" x="-60" y="21" width="120" height="9" rx="3"/><text class="tx" transform="rotate(${-d.a})">${i+1}</text>`:''}</g>`}
+function draw(){
+  const bad=conf();let s='';
+  T.forEach((d,i)=>{if(routes&&routes[i])s+=`<polyline class="ln" fill="none" points="${routes[i].map(p=>p.x+','+p.y).join(' ')}"/>`;else if(diff(i))s+=`<line class="ln" x1="${A[i].x}" y1="${A[i].y}" x2="${d.x}" y2="${d.y}"/>`});
+  A.forEach((d,i)=>{s+=desk(d,i,'ac',true).replace('data-i','data-g')});
+  T.forEach((d,i)=>{s+=desk(d,i,'dk'+(bad.has(i)?' bad':'')+(i===sel?' sel':''),true)});
+  if(sel!==null){const d=T[sel];s+=`<g transform="translate(${d.x} ${d.y}) rotate(${d.a})"><line class="ln" style="stroke:var(--teal);stroke-dasharray:none" x1="0" y1="-30" x2="0" y2="-54"/><circle class="hd" data-h="1" cx="0" cy="-58" r="15"/><circle data-h="1" cx="0" cy="-58" r="30" fill="transparent"/></g>`}
+  $('#L').innerHTML=s;ui(bad)
+}
+function ui(bad=conf()){
+  const n=T.filter((_,i)=>diff(i)).length,st=$('#st'),go=$('#go'),nt=note&&note.k===JSON.stringify(T)?note:null;
+  $('#rep').textContent=nt?nt.t:'';
+  let t='Парты стоят по схеме',c='ok';
+  if(busy){t=`${stage}: парты в пути`;c=''}else if(bad.size){t=`Тесно или у стены: ${bad.size}`;c='bad'}else if(nt&&!nt.ok){t='Маршрут не построен';c='bad'}else if(n){t=`Не на месте: ${n}`;c=''}
+  st.textContent=t;st.className='st '+c;go.disabled=busy||!n||bad.size>0;
+  const on=sel!==null;$('#ins').className=on?'':'off';
+  if(on){$('#num').textContent='Парта '+(sel+1);const a=Math.round(T[sel].a)%360;$('#rg').value=a;$('#av').textContent=a+'°'}
+}
+const pt=e=>{const q=svg.createSVGPoint();q.x=e.clientX;q.y=e.clientY;return q.matrixTransform(svg.getScreenCTM().inverse())};
+svg.addEventListener('pointerdown',e=>{
+  if(busy)return;const h=e.target.closest('[data-h]'),k=e.target.closest('[data-i]');
+  if(h&&sel!==null)drag={m:'r'};
+  else if(k){sel=+k.dataset.i;const p=pt(e);drag={m:'m',dx:T[sel].x-p.x,dy:T[sel].y-p.y}}
+  else sel=null;
+  draw()});
+addEventListener('pointermove',e=>{
+  if(!drag)return;const p=pt(e),d=T[sel],sp=$('#sp').checked;
+  if(drag.m==='m'){let x=p.x+drag.dx,y=p.y+drag.dy;if(sp){x=Math.round(x/10)*10;y=Math.round(y/10)*10}d.x=cl(x,70,W-70);d.y=cl(y,70,H-70)}
+  else{let a=Math.atan2(p.y-d.y,p.x-d.x)/R+90;if(sp)a=Math.round(a/15)*15;d.a=nz(a)}
+  draw()});
+addEventListener('pointerup',()=>drag=null);
+$('#rg').oninput=e=>{if(sel===null)return;T[sel].a=+e.target.value;draw()};
+$('#ins').onclick=e=>{const b=e.target.closest('button');if(!b||sel===null)return;
+  T[sel].a=b.dataset.a!==undefined?+b.dataset.a:nz(T[sel].a+ +b.dataset.d);draw()};
+function anim(ms){return new Promise(res=>{
+  const t0=performance.now(),mx=Math.max(...ms.map(m=>m.r.tot)),D=matchMedia('(prefers-reduced-motion:reduce)').matches?1:Math.min(3500,Math.max(1200,mx*4));
+  (function f(t){let k=Math.min(1,(t-t0)/D);k=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+    ms.forEach(m=>{A[m.i]=at(m.r,k)});
+    if(t-t0<D){draw();requestAnimationFrame(f)}else{ms.forEach(m=>{A[m.i]={...m.r.pts[m.r.pts.length-1]}});draw();res()}})(t0)})}
+async function go(){
+  if(busy)return;const k=JSON.stringify(T);
+  const fail=t=>{note={k,t,ok:0};draw()};
+  if(conf(A).size)return fail('Парты на полу стоят слишком близко или у стены. Сначала раздвиньте их вручную.');
+  if(conf(T).size)return fail('В схеме есть пересечения или парты у стены.');
+  $('#st').textContent='Считаю маршруты…';await new Promise(r=>setTimeout(r,40));
+  const st=plan();
+  if(!st)return fail('Маршрут не найден: не хватает свободного места для манёвра. Освободите проход или измените схему.');
+  const pk=st.filter(b=>b.some(m=>m.park)).length;
+  note={k,ok:1,t:`Проверено: в схеме зазор между партами не менее 8 см, маршруты свободны от столкновений. Этапов: ${st.length}`+(pk?`, временных отъездов: ${pk}`:'')+'.'};
+  routes={};st.forEach(b=>b.forEach(m=>{const q=routes[m.i]=routes[m.i]||[];m.r.pts.forEach(p=>q.push({x:p.x,y:p.y}))}));
+  busy=true;
+  for(let b=0;b<st.length;b++){stage=`Этап ${b+1} из ${st.length}`;draw();await anim(st[b])}
+  routes=null;busy=false;draw()}
+$('#go').onclick=go;
+const KS='smartdesk.schemes';
+const ld=()=>{try{return JSON.parse(localStorage.getItem(KS))||[]}catch(e){return[]}};
+const sv=a=>{try{localStorage.setItem(KS,JSON.stringify(a))}catch(e){}};
+function lists(){
+  $('#pr').innerHTML=Object.keys(P).map(k=>`<button class="b" data-p="${k}">${k}</button>`).join('');
+  $('#my').innerHTML=ld().map((s,i)=>`<div class="sv"><button class="b" data-u="${i}">${s.name.replace(/[<&]/g,'')}</button><button class="b" data-x="${i}" aria-label="Удалить схему">×</button></div>`).join('')||'<p class="lg">Пока нет сохранённых схем.</p>'
+}
+$('#pr').onclick=e=>{const b=e.target.closest('[data-p]');if(b&&!busy){T=P[b.dataset.p]();sel=null;draw()}};
+$('#my').onclick=e=>{const l=ld(),u=e.target.closest('[data-u]'),x=e.target.closest('[data-x]');
+  if(u&&!busy){T=l[+u.dataset.u].desks.map(d=>({...d}));sel=null;draw()}
+  if(x){l.splice(+x.dataset.x,1);sv(l);lists()}};
+$('#sv').onclick=()=>{const n=$('#nm').value.trim();if(!n)return $('#nm').focus();const l=ld();l.push({name:n,desks:T.map(d=>({...d}))});sv(l);$('#nm').value='';lists()};
+lists();draw();
+</script>
+</body>
+</html>
